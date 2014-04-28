@@ -3,6 +3,7 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 using StackExchange.Redis;
 using System.Collections.Generic;
 using ProtoBuf;
+using System.IO;
 
 namespace UnitTestRedis
 {
@@ -58,17 +59,102 @@ namespace UnitTestRedis
         }
 
         [TestMethod]
-        public void TestModel()
+        public void TestProtobufNet()
         {
-            //List<People> ppl = new List<People>();
             var ppl = new People()
             {
                 ID = 1,
                 FirstName = "John",
-                LastName = "Doe"
+                LastName = "Doe",
+                Address = new AddressModel() { 
+                    AptNumber = 56, 
+                    StreetAdress = "123 Main Street", 
+                    City = "Toronto", 
+                    State = "Ontario", 
+                    Country = "Canada" 
+                }
             };
-            
-            Serializer.Serialize<People>(sr, ppl);
+            using (var file = File.Create("person.bin"))
+            {
+                Serializer.Serialize<People>(file, ppl);
+            }
+
+            People newPerson;
+            using (var file = File.OpenRead("person.bin"))
+            {
+                newPerson = Serializer.Deserialize<People>(file);
+            }
+            Console.Write(newPerson.Address.StreetAdress);
+            Assert.AreEqual(newPerson.Address.Country, ppl.Address.Country);
+        }
+
+        [TestMethod]
+        public void TestProtobufAndRedis()
+        {
+            var ppl = new People()
+            {
+                ID = 2,
+                FirstName = "Jane",
+                LastName = "Smith",
+                Address = new AddressModel()
+                {
+                    AptNumber = 56,
+                    StreetAdress = "123 Main Street",
+                    City = "Toronto",
+                    State = "Ontario",
+                    Country = "Canada"
+                }
+            };
+            db.StringSet("TestProtobufAndRedis", DataToBytes(ppl));
+            byte[] val = db.StringGet("TestProtobufAndRedis");
+            MemoryStream stream = new MemoryStream(val, false);
+            var val2 = Serializer.Deserialize<People>(stream);
+            Assert.AreEqual(ppl.Address.AptNumber, val2.Address.AptNumber);
+        }
+
+        [TestMethod]
+        public void TestProtobufAndRedis_List()
+        {
+            List<People> ppl = new List<People>();
+            var person1 = new People()
+            {
+                ID = 1,
+                FirstName = "Jane",
+                LastName = "Smith",
+                Address = new AddressModel() { AptNumber = 51, StreetAdress = "123 Main Street", City = "Toronto", State = "Ontario", Country = "Canada"}
+            };
+            var person2 = new People()
+            {
+                ID = 2,
+                FirstName = "John",
+                LastName = "Doe",
+                Address = new AddressModel() { AptNumber = 52, StreetAdress = "678 Main Street", City = "Toronto1", State = "Ontario1", Country = "Canada1" }
+            };
+            ppl.Add(person1);
+            ppl.Add(person2);
+            db.StringSet("TestProtobufAndRedis", ListToBytes(ppl));
+            byte[] val = db.StringGet("TestProtobufAndRedis");
+            MemoryStream stream = new MemoryStream(val, false);
+            var val2 = Serializer.Deserialize<List<People>>(stream);
+            Assert.AreEqual(ppl[1].Address.StreetAdress, val2[1].Address.StreetAdress);
+        }
+
+        private static byte[] DataToBytes(People data)
+        {
+            MemoryStream stream = new MemoryStream();
+            Serializer.Serialize(stream, data);
+            byte[] bytes = stream.ToArray();
+            stream.Close();
+            return bytes;
+        }
+
+        private static byte[] ListToBytes(List<People> data)
+        {
+            MemoryStream stream = new MemoryStream();
+            Serializer.Serialize(stream, data);
+            byte[] bytes = stream.ToArray();
+            stream.Close();
+            return bytes;
         }
     }
 }
