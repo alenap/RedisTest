@@ -20,11 +20,8 @@ C:\workspace\StackExchangeRedisTest\UnitTestRedis\UnitTestRedis\bin\Debug\protob
 C:\workspace\RedisTest\UnitTestRedis\UnitTestRedis\obj\Debug\UnitTestRedis.dll
 C:\workspace\RedisTest\UnitTestRedis\UnitTestRedis\bin\Debug\UnitTestRedis.dll
 C:\workspace\RedisTest\UnitTestRedis\UnitTestRedis\bin\Debug\UnitTestRedis.pdb
-C:\workspace\RedisTest\UnitTestRedis\UnitTestRedis\bin\Debug\protobuf-net.dll
 C:\workspace\RedisTest\UnitTestRedis\UnitTestRedis\bin\Debug\StackExchange.Redis.dll
-C:\workspace\RedisTest\UnitTestRedis\UnitTestRedis\bin\Debug\protobuf-net.pdb
 C:\workspace\RedisTest\UnitTestRedis\UnitTestRedis\bin\Debug\protobuf-net.xml
 C:\workspace\RedisTest\UnitTestRedis\UnitTestRedis\bin\Debug\StackExchange.Redis.pdb
 C:\workspace\RedisTest\UnitTestRedis\UnitTestRedis\bin\Debug\StackExchange.Redis.xml
 C:\workspace\RedisTest\UnitTestRedis\UnitTestRedis\obj\Debug\UnitTestRedis.pdb
-C:\workspace\RedisTest\UnitTestRedis\UnitTestRedis\obj\Debug\UnitTestRedis.csprojResolveAssemblyReference.cache

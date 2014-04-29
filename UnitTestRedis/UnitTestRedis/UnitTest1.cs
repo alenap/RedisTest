@@ -4,6 +4,8 @@ using StackExchange.Redis;
 using System.Collections.Generic;
 using ProtoBuf;
 using System.IO;
+using System.Linq;
+using ProtoBuf.Meta;
 
 namespace UnitTestRedis
 {
@@ -11,6 +13,15 @@ namespace UnitTestRedis
     public class UnitTest1
     {
         private IDatabase db = RedisConnection.Instance.GetDatabase();
+        //private RuntimeTypeModel model;
+        
+        //public UnitTest1()
+        //{
+        //    model = TypeModel.Create();
+        //    model.Add(typeof(People), true);
+        //    model.Add(typeof(AddressModel), true);
+        //}
+
         [TestMethod]
         public void SetAndGet()
         {            
@@ -24,8 +35,8 @@ namespace UnitTestRedis
         public void TestInteger()
         {
             int num = 5;
-            db.StringSet("NewRedis_TestInteger", num);
-            var val = db.StringGet("NewRedis_TestInteger");
+            db.StringSet("StackExchangeRedis_TestInteger", num);
+            var val = db.StringGet("StackExchangeRedis_TestInteger");
             Assert.AreEqual(val, num);
         }
 
@@ -33,8 +44,8 @@ namespace UnitTestRedis
         public void TestDouble()
         {
             double num = 5.34567;
-            db.StringSet("NewRedis_TestDouble", num);
-            var val = db.StringGet("NewRedis_TestDouble");
+            db.StringSet("StackExchangeRedis_TestDouble", num);
+            var val = db.StringGet("StackExchangeRedis_TestDouble");
             Assert.AreEqual(val, num);
         }
 
@@ -42,18 +53,18 @@ namespace UnitTestRedis
         public void TestBool()
         {
             bool b = true;
-            db.StringSet("NewRedis_TestBoolT", b);
-            var val = db.StringGet("NewRedis_TestBoolT");
+            db.StringSet("StackExchangeRedis_TestBoolT", b);
+            var val = db.StringGet("StackExchangeRedis_TestBoolT");
             Assert.AreEqual(val, b);
         }
 
         [TestMethod]
-        public void TestDate()
+        public void TestSerializedDate()
         {
-            DateTime now = DateTime.Now;      
-            db.StringSet("NewRedis_TestDate", now.ToString());
-            var val = Convert.ToDateTime(db.StringGet("NewRedis_TestDate"));
-            Console.WriteLine(now.ToString());
+            DateTime now = DateTime.Now;
+            SetCache<DateTime>("StackExchangeRedis_TestSerializedDate", now);
+            var val = GetCache<DateTime>("StackExchangeRedis_TestSerializedDate");
+            Console.WriteLine(now);
             Console.WriteLine(val);
             Assert.AreEqual(val, now);
         }
@@ -89,6 +100,17 @@ namespace UnitTestRedis
         }
 
         [TestMethod]
+        public void TestSerializedArray()
+        {
+            int[] arr = new int[4] { 5, 7, 11, 17 };
+            SetCache<int[]>("StackExchangeRedis_TestSerializedArray", arr);
+            Console.WriteLine("Array length = " + arr.Length);
+            arr = GetCache<int[]>("StackExchangeRedis_TestSerializedArray");
+            Console.WriteLine("Deserialized array length = " + arr.Length);
+            Assert.IsTrue(arr[2] == 11);
+        }
+
+        [TestMethod]
         public void TestProtobufAndRedis()
         {
             var ppl = new People()
@@ -105,15 +127,82 @@ namespace UnitTestRedis
                     Country = "Canada"
                 }
             };
-            db.StringSet("TestProtobufAndRedis", DataToBytes(ppl));
-            byte[] val = db.StringGet("TestProtobufAndRedis");
-            MemoryStream stream = new MemoryStream(val, false);
-            var val2 = Serializer.Deserialize<People>(stream);
+            SetCache<People>("StackExchangeRedis_TestProtobufAndRedis", ppl);
+            var val2 = GetCache<People>("StackExchangeRedis_TestProtobufAndRedis");
             Assert.AreEqual(ppl.Address.AptNumber, val2.Address.AptNumber);
         }
 
         [TestMethod]
         public void TestProtobufAndRedis_List()
+        {
+            List<People> ppl = GenerateList();
+            SetCache<List<People>>("StackExchangeRedis_TestProtobufAndRedis", ppl);
+            var val2 = GetCache<List<People>>("StackExchangeRedis_TestProtobufAndRedis");
+            Assert.AreEqual(ppl[1].Address.StreetAdress, val2[1].Address.StreetAdress);
+        }
+        
+        [TestMethod]
+        public void TestProtobufAndRedis_IEnumerable()
+        {
+            var cachekey = "StackExchangeRedis_TestProtobufAndRedis";
+            List<People> ppl = GenerateList();
+            IEnumerable<People> Ippl = (IEnumerable<People>)ppl;
+            SetCache<IEnumerable<People>>(cachekey, ppl);
+            var val2 = GetCache<IEnumerable<People>>(cachekey);
+            var el = val2.ElementAt(1);            
+            Assert.AreEqual(ppl[1].Address.StreetAdress, el.Address.StreetAdress);
+        }
+
+        [TestMethod]
+        public void TestDeleteKey()
+        {
+            DeleteFromCache("StackExchangeRedis_TestProtobufAndRedis");
+        }
+
+        // TO DO:
+        // Async
+        // keydump
+        // stringSetAsync
+        // no attributes
+        // delete all keys
+        // delete keys matching a pattern
+
+        [TestMethod]
+        public void TestExpirationDate()
+        {
+            var cachekey = "StackExchangeRedis_TestExpirationDate";
+            //var exp = DateTime.Now.AddMinutes(60);
+            var exp = new TimeSpan(0, 30, 0);
+            db.StringSet(cachekey, "testing expiration date");
+            db.KeyExpire(cachekey, exp);
+            var ttl = db.KeyTimeToLive(cachekey);
+            Console.Write(ttl);
+        }
+
+        [TestMethod]
+        public void TestDeleteKeysByName()
+        {
+            //var server = RedisConnection.Instance.GetServer("172.16.10.32:6379");
+            //foreach (var key in server.Keys(pattern: "StackExchangeRedis_*"))
+            //{
+            //    Console.WriteLine(key);
+            //}
+            //server.FlushDatabase();
+        }
+
+
+        #region non-test methods
+
+        private static byte[] DataToBytes<T>(T data)
+        {
+            MemoryStream stream = new MemoryStream();
+            Serializer.Serialize(stream, data);
+            byte[] bytes = stream.ToArray();
+            stream.Close();
+            return bytes;
+        }
+
+        private static List<People> GenerateList()
         {
             List<People> ppl = new List<People>();
             var person1 = new People()
@@ -121,7 +210,7 @@ namespace UnitTestRedis
                 ID = 1,
                 FirstName = "Jane",
                 LastName = "Smith",
-                Address = new AddressModel() { AptNumber = 51, StreetAdress = "123 Main Street", City = "Toronto", State = "Ontario", Country = "Canada"}
+                Address = new AddressModel() { AptNumber = 51, StreetAdress = "123 Main Street", City = "Toronto", State = "Ontario", Country = "Canada" }
             };
             var person2 = new People()
             {
@@ -132,29 +221,31 @@ namespace UnitTestRedis
             };
             ppl.Add(person1);
             ppl.Add(person2);
-            db.StringSet("TestProtobufAndRedis", ListToBytes(ppl));
-            byte[] val = db.StringGet("TestProtobufAndRedis");
+            return ppl;
+        }
+
+        // Serialization/deserialization and caching:
+        public bool SetCache<T>(string key, T value)
+        {
+            if (!string.IsNullOrWhiteSpace(key))
+            {
+                return db.StringSet(key, DataToBytes<T>(value));
+            }
+            return false;
+        }
+
+        public T GetCache<T>(string key)
+        {
+            byte[] val = db.StringGet(key);
             MemoryStream stream = new MemoryStream(val, false);
-            var val2 = Serializer.Deserialize<List<People>>(stream);
-            Assert.AreEqual(ppl[1].Address.StreetAdress, val2[1].Address.StreetAdress);
+            return Serializer.Deserialize<T>(stream);          
         }
 
-        private static byte[] DataToBytes(People data)
+        public bool DeleteFromCache(string key)
         {
-            MemoryStream stream = new MemoryStream();
-            Serializer.Serialize(stream, data);
-            byte[] bytes = stream.ToArray();
-            stream.Close();
-            return bytes;
-        }
+            return db.KeyDelete(key);
+        }       
 
-        private static byte[] ListToBytes(List<People> data)
-        {
-            MemoryStream stream = new MemoryStream();
-            Serializer.Serialize(stream, data);
-            byte[] bytes = stream.ToArray();
-            stream.Close();
-            return bytes;
-        }
+        #endregion
     }
 }

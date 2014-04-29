@@ -40,4 +40,23 @@ namespace UnitTestRedis
         [ProtoMember(6)]
         public string Country { get; set; }
     }
+
+    public class PeopleNoAttr
+    {
+        public int ID { get; set; }
+        public string FirstName { get; set; }
+        public string LastName { get; set; }
+        public DateTime BirthDate { get; set; }
+        public bool Active { get; set; }
+        public AddressModel Address { get; set; }
+    }
+    public class AddressNoAttr
+    {
+        public int AptNumber { get; set; }
+        public string StreetAdress { get; set; }
+        public string ZipCode { get; set; }
+        public string City { get; set; }
+        public string State { get; set; }
+        public string Country { get; set; }
+    }
 }
