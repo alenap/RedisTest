@@ -14,6 +14,7 @@ namespace UnitTestRedis
     {
         private IDatabase db = RedisConnection.Instance.GetDatabase();
         //private RuntimeTypeModel model;
+        private IServer server = RedisConnection.Instance.GetServer("172.16.10.32:6379");
         
         //public UnitTest1()
         //{
@@ -160,12 +161,11 @@ namespace UnitTestRedis
         }
 
         // TO DO:
+        // =====
         // Async
         // keydump
         // stringSetAsync
         // no attributes
-        // delete all keys
-        // delete keys matching a pattern
 
         [TestMethod]
         public void TestExpirationDate()
@@ -180,16 +180,16 @@ namespace UnitTestRedis
         }
 
         [TestMethod]
-        public void TestDeleteKeysByName()
+        public void TestDeleteKeysByPartOfName()
         {
-            //var server = RedisConnection.Instance.GetServer("172.16.10.32:6379");
-            //foreach (var key in server.Keys(pattern: "StackExchangeRedis_*"))
-            //{
-            //    Console.WriteLine(key);
-            //}
-            //server.FlushDatabase();
+            DeleteKeysByPartOfName("StackExchangeRedis_");
         }
 
+        [TestMethod]
+        public void TestDeleteAllKeys()
+        {
+            ClearCache();
+        }
 
         #region non-test methods
 
@@ -244,8 +244,25 @@ namespace UnitTestRedis
         public bool DeleteFromCache(string key)
         {
             return db.KeyDelete(key);
-        }       
+        }
 
+        public bool DeleteKeysByPartOfName(string pattern)
+        {
+            bool result = true;
+            var keysPattern = string.Format("*{0}*", pattern);            
+            foreach (var key in server.Keys(pattern: keysPattern))
+            {
+                if (!db.KeyDelete(key))
+                    result = false;
+            }
+            return result;
+        }
+
+        public void ClearCache()
+        {
+            server.FlushDatabase();
+        }
+      
         #endregion
     }
 }

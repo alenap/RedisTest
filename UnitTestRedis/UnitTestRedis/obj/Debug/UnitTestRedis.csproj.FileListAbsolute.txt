@@ -25,3 +25,5 @@ C:\workspace\RedisTest\UnitTestRedis\UnitTestRedis\bin\Debug\protobuf-net.xml
 C:\workspace\RedisTest\UnitTestRedis\UnitTestRedis\bin\Debug\StackExchange.Redis.pdb
 C:\workspace\RedisTest\UnitTestRedis\UnitTestRedis\bin\Debug\StackExchange.Redis.xml
 C:\workspace\RedisTest\UnitTestRedis\UnitTestRedis\obj\Debug\UnitTestRedis.pdb
+C:\workspace\RedisTest\UnitTestRedis\UnitTestRedis\bin\Debug\protobuf-net.dll
+C:\workspace\RedisTest\UnitTestRedis\UnitTestRedis\bin\Debug\protobuf-net.pdb
