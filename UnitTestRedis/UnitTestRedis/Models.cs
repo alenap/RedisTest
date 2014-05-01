@@ -48,7 +48,7 @@ namespace UnitTestRedis
         public string LastName { get; set; }
         public DateTime BirthDate { get; set; }
         public bool Active { get; set; }
-        public AddressModel Address { get; set; }
+        public AddressNoAttr Address { get; set; }
     }
     public class AddressNoAttr
     {

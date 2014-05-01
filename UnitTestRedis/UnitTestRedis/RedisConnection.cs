@@ -13,11 +13,10 @@ namespace UnitTestRedis
         {
             EndPoints =
             {
-                { "172.16.10.32", 6379 }
+                { "192.168.11.46", 12112 }
             },
-            KeepAlive = 180,
-            Password = "crm5au1g",
-            AllowAdmin = true
+            AllowAdmin = true,
+            Proxy = Proxy.Twemproxy
         };
         private static readonly ConnectionMultiplexer redis = ConnectionMultiplexer.Connect(configOptions);
 

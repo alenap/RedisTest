@@ -14,14 +14,13 @@ namespace UnitTestRedis
     {
         private IDatabase db = RedisConnection.Instance.GetDatabase();
         //private RuntimeTypeModel model;
-        private IServer server = RedisConnection.Instance.GetServer("172.16.10.32:6379");
-        
-        //public UnitTest1()
-        //{
-        //    model = TypeModel.Create();
-        //    model.Add(typeof(People), true);
-        //    model.Add(typeof(AddressModel), true);
-        //}
+        //private IServer server = RedisConnection.Instance.GetServer("192.168.11.46:12112");
+
+        public UnitTest1()
+        {
+            RuntimeTypeModel.Default.Add(typeof(PeopleNoAttr), true);
+            RuntimeTypeModel.Default.Add(typeof(AddressNoAttr), true);
+        }
 
         [TestMethod]
         public void SetAndGet()
@@ -114,12 +113,12 @@ namespace UnitTestRedis
         [TestMethod]
         public void TestProtobufAndRedis()
         {
-            var ppl = new People()
+            var ppl = new PeopleNoAttr()
             {
                 ID = 2,
                 FirstName = "Jane",
                 LastName = "Smith",
-                Address = new AddressModel()
+                Address = new AddressNoAttr()
                 {
                     AptNumber = 56,
                     StreetAdress = "123 Main Street",
@@ -128,24 +127,25 @@ namespace UnitTestRedis
                     Country = "Canada"
                 }
             };
-            SetCache<People>("StackExchangeRedis_TestProtobufAndRedis", ppl);
-            var val2 = GetCache<People>("StackExchangeRedis_TestProtobufAndRedis");
-            Assert.AreEqual(ppl.Address.AptNumber, val2.Address.AptNumber);
+            SetCacheNoAttr<PeopleNoAttr>("StackExchangeRedis_TestProtobufAndRedis_NoAttr", ppl);
+            var val2 = GetCache<PeopleNoAttr>("StackExchangeRedis_TestProtobufAndRedis");
+            //Assert.AreEqual(ppl.Address.AptNumber, val2.Address.AptNumber);
         }
 
         [TestMethod]
         public void TestProtobufAndRedis_List()
         {
+            var cachekey = "StackExchangeRedis_TestProtobufAndRedisList";
             List<People> ppl = GenerateList();
-            SetCache<List<People>>("StackExchangeRedis_TestProtobufAndRedis", ppl);
-            var val2 = GetCache<List<People>>("StackExchangeRedis_TestProtobufAndRedis");
+            SetCache<List<People>>(cachekey, ppl);
+            var val2 = GetCache<List<People>>(cachekey);
             Assert.AreEqual(ppl[1].Address.StreetAdress, val2[1].Address.StreetAdress);
         }
         
         [TestMethod]
         public void TestProtobufAndRedis_IEnumerable()
         {
-            var cachekey = "StackExchangeRedis_TestProtobufAndRedis";
+            var cachekey = "StackExchangeRedis_TestProtobufAndRedisIEnumerable";
             List<People> ppl = GenerateList();
             IEnumerable<People> Ippl = (IEnumerable<People>)ppl;
             SetCache<IEnumerable<People>>(cachekey, ppl);
@@ -162,19 +162,34 @@ namespace UnitTestRedis
 
         // TO DO:
         // =====
-        // Async
-        // keydump
-        // stringSetAsync
         // no attributes
+        // twemproxy
+        // compare to old redis: C:\workspace\CareerCruising_Core\CC.Data_Tests\RemoteCacheProvider_Test.cs
 
+
+        //******************************
         [TestMethod]
+        public void TestSync()
+        {
+            var aSync = db.StringGet("StackExchangeRedis_TestDouble");
+            var bSync = db.StringGet("StackExchangeRedis_TestInteger");
+        }
+        [TestMethod]
+        public void TestAsync()
+        {            
+            var aPending = db.StringGetAsync("StackExchangeRedis_TestDouble");
+            var bPending = db.StringGetAsync("StackExchangeRedis_TestInteger");
+            var a = db.Wait(aPending);
+            var b = db.Wait(bPending);
+        }
+        //******************************
+
+        /*[TestMethod]
         public void TestExpirationDate()
         {
             var cachekey = "StackExchangeRedis_TestExpirationDate";
-            //var exp = DateTime.Now.AddMinutes(60);
-            var exp = new TimeSpan(0, 30, 0);
             db.StringSet(cachekey, "testing expiration date");
-            db.KeyExpire(cachekey, exp);
+            db.KeyExpire(cachekey, TimeSpan.FromMinutes(30));
             var ttl = db.KeyTimeToLive(cachekey);
             Console.Write(ttl);
         }
@@ -183,13 +198,13 @@ namespace UnitTestRedis
         public void TestDeleteKeysByPartOfName()
         {
             DeleteKeysByPartOfName("StackExchangeRedis_");
-        }
+        }*/
 
-        [TestMethod]
+        /*[TestMethod]
         public void TestDeleteAllKeys()
         {
             ClearCache();
-        }
+        }*/
 
         #region non-test methods
 
@@ -234,6 +249,17 @@ namespace UnitTestRedis
             return false;
         }
 
+        public bool SetCacheNoAttr<T>(string key, T value)
+        {            
+            if (!string.IsNullOrWhiteSpace(key))
+            {
+                return db.StringSet(key, DataToBytes<T>(value));
+            }
+            return false;
+        }
+
+
+
         public T GetCache<T>(string key)
         {
             byte[] val = db.StringGet(key);
@@ -250,18 +276,18 @@ namespace UnitTestRedis
         {
             bool result = true;
             var keysPattern = string.Format("*{0}*", pattern);            
-            foreach (var key in server.Keys(pattern: keysPattern))
+            /*foreach (var key in server.Keys(pattern: keysPattern))
             {
                 if (!db.KeyDelete(key))
                     result = false;
-            }
+            }*/
             return result;
         }
 
-        public void ClearCache()
+        /*public void ClearCache()
         {
             server.FlushDatabase();
-        }
+        }*/
       
         #endregion
     }
